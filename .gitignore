@@ -1,0 +1,62 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# ===== Archivos del sistema operativo y editores =====
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ===== Archivos y directorios de Gradle =====
+.gradle/
+.kotlin/
+build/
+local.properties  # Contiene la ruta del SDK, específica de cada máquina [citation:1][citation:8]
+
+# ===== Archivos de Android Studio / IntelliJ IDEA =====
+*.iml
+.idea/           # Contiene configuraciones específicas del IDE del usuario [citation:9]
+*.ipr
+*.iws
+out/
+
+# ===== Archivos de salida de compilación de Android =====
+*.apk
+*.aab
+*.ap_
+output-metadata.json
+
+# ===== Carpetas generadas por Android Studio =====
+captures/         # Capturas de pantalla de la interfaz de usuario
+.externalNativeBuild/ # Archivos generados para compilación nativa (C/C++) [citation:4][citation:8]
+.cxx/             # Archivos de caché para herramientas de compilación nativas [citation:4][citation:8]
+
+# ===== Archivos de perfilado =====
+*.hprof
+
+# ===== Información sensible: firmas y claves =====
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+
+# ===== Archivos de servicios de Google (Opcional) =====
+# google-services.json
+
+# ===== Otros archivos generados =====
+bin/
+gen/
+proguard/         # Archivos de configuración de ProGuard generados por Eclipse [citation:1]
