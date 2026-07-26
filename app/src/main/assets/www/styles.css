@@ -449,12 +449,18 @@ h2 {
   border: none;
   background-color: var(--color-danger);
   color: white;
-  font-size: 28px;
+  font-size: 32px;
   box-shadow: 0 8px 15px rgba(238, 82, 83, 0.4);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.hangup-icon {
+  display: inline-block;
+  transform: rotate(135deg);
+  line-height: 1;
 }
 
 .btn-hangup:active {
