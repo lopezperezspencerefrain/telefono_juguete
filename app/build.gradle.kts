@@ -34,7 +34,7 @@ android {
     buildFeatures {
       compose = true
       aidl = false
-      buildConfig = false
+      buildConfig = true
       shaders = false
     }
 
@@ -75,4 +75,10 @@ dependencies {
 
   // Google Mobile Ads (AdMob) SDK
   implementation("com.google.android.gms:play-services-ads:23.0.0")
+
+  // Google Play Billing (real "remove ads" purchase)
+  implementation(libs.billing.ktx)
+
+  // Unit testing
+  testImplementation(libs.junit)
 }
