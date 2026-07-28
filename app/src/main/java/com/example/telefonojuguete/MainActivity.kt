@@ -40,6 +40,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.webkit.WebViewAssetLoader
 import kotlinx.coroutines.delay
+import com.example.telefonojuguete.billing.BillingManager
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
@@ -65,6 +66,41 @@ class MainActivity : ComponentActivity() {
     AdRequest.DEVICE_ID_EMULATOR
     // "PASTE_YOUR_DEVICE_HASHED_ID_HERE",
   )
+
+  private val billingManager: BillingManager by lazy {
+    BillingManager(
+      context = this,
+      productId = "remove_ads",
+      listener = object : BillingManager.Listener {
+        override fun onPriceLoaded(formattedPrice: String) {
+          callJs("onRemoveAdsPriceLoaded", formattedPrice)
+        }
+
+        override fun onEntitlementGranted(isRestore: Boolean) {
+          if (isRestore) callJs("onRemoveAdsEntitlementRestored") else callJs("onRemoveAdsPurchased")
+        }
+
+        override fun onPurchasePending() {
+          callJs("onRemoveAdsPurchasePending")
+        }
+
+        override fun onPurchaseCancelled() {
+          // User closed the Play payment sheet; nothing to report.
+        }
+
+        override fun onPurchaseError(message: String) {
+          callJs("onRemoveAdsPurchaseFailed", message)
+        }
+      }
+    )
+  }
+
+  // Play Billing callbacks are guaranteed to run on the main thread, so calling
+  // evaluateJavascript directly from them (via this helper) is safe.
+  private fun callJs(functionName: String, vararg args: String) {
+    val encodedArgs = args.joinToString(",") { org.json.JSONObject.quote(it) }
+    webView?.evaluateJavascript("$functionName($encodedArgs);", null)
+  }
 
   private fun loadGoogleAd() {
     if (mInterstitialAd != null || isAdLoading) return
@@ -139,6 +175,25 @@ class MainActivity : ComponentActivity() {
   }
 
   @android.webkit.JavascriptInterface
+  fun getRemoveAdsPrice(): String = billingManager.cachedPriceOrDefault()
+
+  @android.webkit.JavascriptInterface
+  fun purchaseRemoveAds() {
+    runOnUiThread {
+      if (billingManager.isEntitled()) {
+        callJs("onRemoveAdsPurchased")
+        return@runOnUiThread
+      }
+      if (BuildConfig.DEBUG && !billingManager.isReady()) {
+        billingManager.grantDebugEntitlement()
+        callJs("onRemoveAdsPurchased")
+      } else {
+        billingManager.launchPurchase(this@MainActivity)
+      }
+    }
+  }
+
+  @android.webkit.JavascriptInterface
   fun startKioskMode() {
     runOnUiThread {
       try {
@@ -202,6 +257,9 @@ class MainActivity : ComponentActivity() {
     )
     MobileAds.initialize(this) {}
     loadGoogleAd()
+
+    // Connect to Play Billing & restore any existing "remove ads" purchase
+    billingManager.connect()
 
     // Hide UI elements safely
     hideSystemUI()
