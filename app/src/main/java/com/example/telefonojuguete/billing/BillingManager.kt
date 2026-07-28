@@ -30,9 +30,10 @@ class BillingManager(
   private val appContext = context.applicationContext
   private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-  @Volatile private var isConnected = false
-  private var cachedProductDetails: ProductDetails? = null
-  private var cachedFormattedPrice: String? = null
+  // Written from Billing Library callbacks (main thread) and read from MainActivity's
+  // @JavascriptInterface methods, which run on the WebView's JS thread.
+  @Volatile private var cachedProductDetails: ProductDetails? = null
+  @Volatile private var cachedFormattedPrice: String? = null
 
   private val purchasesUpdatedListener = PurchasesUpdatedListener { billingResult, purchases ->
     handlePurchasesUpdated(billingResult, purchases)
@@ -47,15 +48,16 @@ class BillingManager(
   fun connect() {
     billingClient.startConnection(object : BillingClientStateListener {
       override fun onBillingSetupFinished(billingResult: BillingResult) {
-        isConnected = billingResult.responseCode == BillingClient.BillingResponseCode.OK
-        if (isConnected) {
+        val connected = billingResult.responseCode == BillingClient.BillingResponseCode.OK
+        if (connected) {
           queryProductDetails()
           restorePurchases()
         }
       }
 
       override fun onBillingServiceDisconnected() {
-        isConnected = false
+        // enableAutoServiceReconnection() handles re-establishing the connection; readiness is
+        // read live from billingClient.isReady rather than tracked here.
       }
     })
   }
@@ -73,14 +75,21 @@ class BillingManager(
       .build()
 
     billingClient.queryProductDetailsAsync(params) { billingResult, result ->
-      if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-        val details = result.productDetailsList.firstOrNull { it.productId == productId }
-        val price = details?.oneTimePurchaseOfferDetails?.formattedPrice
-        if (details != null && price != null) {
-          cachedProductDetails = details
-          cachedFormattedPrice = price
-          listener.onPriceLoaded(price)
-        }
+      val details = if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+        result.productDetailsList.firstOrNull { it.productId == productId }
+      } else {
+        null
+      }
+      val price = details?.oneTimePurchaseOfferDetails?.formattedPrice
+      if (details != null && price != null) {
+        cachedProductDetails = details
+        cachedFormattedPrice = price
+        listener.onPriceLoaded(price)
+      } else {
+        android.util.Log.e(
+          TAG,
+          "Failed to load product details for $productId: responseCode=${billingResult.responseCode}"
+        )
       }
     }
   }
@@ -107,8 +116,10 @@ class BillingManager(
   }
 
   fun launchPurchase(activity: Activity) {
+    // isReady() is the single readiness check; the local read of cachedProductDetails only
+    // exists so the compiler can smart-cast it to non-null below.
     val details = cachedProductDetails
-    if (!isConnected || details == null) {
+    if (!isReady() || details == null) {
       listener.onPurchaseError("Billing not ready")
       return
     }
@@ -125,10 +136,20 @@ class BillingManager(
   }
 
   private fun handlePurchasesUpdated(billingResult: BillingResult, purchases: List<Purchase>?) {
-    val purchaseStates = purchases?.map { it.purchaseState } ?: emptyList()
+    // Only this manager's product is our concern; any other SKU in the update belongs to
+    // whoever owns it and must not be acknowledged or turned into a "remove ads" entitlement.
+    val ourPurchases = purchases?.filter { it.products.contains(productId) } ?: emptyList()
+    // An OK update that carried purchases, none of them ours, is not this manager's business
+    // at all — ignore it rather than reporting it as a missing-purchase-data error.
+    if (billingResult.responseCode == BillingClient.BillingResponseCode.OK &&
+      !purchases.isNullOrEmpty() && ourPurchases.isEmpty()
+    ) {
+      return
+    }
+    val purchaseStates = ourPurchases.map { it.purchaseState }
     when (val outcome = classifyPurchaseUpdate(billingResult.responseCode, purchaseStates)) {
       PurchaseOutcome.Granted -> {
-        purchases?.forEach { acknowledgeIfNeeded(it) }
+        ourPurchases.forEach { acknowledgeIfNeeded(it) }
         setEntitled(true)
         listener.onEntitlementGranted(isRestore = false)
       }
@@ -143,8 +164,14 @@ class BillingManager(
       val ackParams = AcknowledgePurchaseParams.newBuilder()
         .setPurchaseToken(purchase.purchaseToken)
         .build()
-      // Play retries acknowledgment delivery on its own; no local retry needed.
-      billingClient.acknowledgePurchase(ackParams) { }
+      // Play auto-refunds a purchase that stays unacknowledged for 3 days. There is no retry
+      // from Play here: our safety net is restorePurchases(), which re-attempts acknowledgment
+      // on the next connect() / app launch if this call fails.
+      billingClient.acknowledgePurchase(ackParams) { billingResult ->
+        if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
+          android.util.Log.e(TAG, "acknowledgePurchase failed: ${billingResult.responseCode}")
+        }
+      }
     }
   }
 
@@ -156,13 +183,21 @@ class BillingManager(
 
   fun cachedPriceOrDefault(): String = cachedFormattedPrice ?: DEFAULT_PRICE
 
-  fun isReady(): Boolean = isConnected && cachedProductDetails != null
+  // billingClient.isReady reflects the library's live connection state, including after
+  // enableAutoServiceReconnection() has silently re-established it without a listener callback.
+  fun isReady(): Boolean = billingClient.isReady && cachedProductDetails != null
 
   fun grantDebugEntitlement() {
     setEntitled(true)
   }
 
+  /** Unbinds from the Play Store service. Call from the owning Activity's onDestroy(). */
+  fun release() {
+    billingClient.endConnection()
+  }
+
   companion object {
+    private const val TAG = "BillingManager"
     private const val PREFS_NAME = "billing_prefs"
     private const val KEY_ENTITLED = "remove_ads_entitled"
     private const val DEFAULT_PRICE = "\$1.00 USD"

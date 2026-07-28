@@ -102,6 +102,19 @@ class MainActivity : ComponentActivity() {
     webView?.evaluateJavascript("$functionName($encodedArgs);", null)
   }
 
+  // billingManager.connect() runs before the WebView exists and its callbacks are async, so the
+  // listener-driven pushes above can fire while webView is still null or the page hasn't defined
+  // its JS callbacks yet — and the restore push only fires the first time entitlement is seen.
+  // This re-pushes the current state once the page is actually able to receive it. Safe to call
+  // before billing has resolved: isEntitled() reads the persisted flag and cachedPriceOrDefault()
+  // falls back to the default string. onRemoveAdsEntitlementRestored() is idempotent in app.js.
+  private fun syncBillingStateToWebView() {
+    if (billingManager.isEntitled()) {
+      callJs("onRemoveAdsEntitlementRestored")
+    }
+    callJs("onRemoveAdsPriceLoaded", billingManager.cachedPriceOrDefault())
+  }
+
   private fun loadGoogleAd() {
     if (mInterstitialAd != null || isAdLoading) return
     isAdLoading = true
@@ -336,6 +349,9 @@ class MainActivity : ComponentActivity() {
                   
                   // Signal that the page has finished loading
                   isPageLoaded = true
+
+                  // The page can now receive JS calls; push current billing state to it.
+                  syncBillingStateToWebView()
                 }
 
                 override fun onReceivedError(
@@ -433,6 +449,14 @@ class MainActivity : ComponentActivity() {
     } catch (e: Exception) {
       e.printStackTrace()
     }
+  }
+
+  override fun onDestroy() {
+    super.onDestroy()
+    // The Activity owns billingManager, so its BillingClient (and the listeners holding a
+    // reference back to this Activity) must be unbound on every teardown, including the
+    // recreation caused by a configuration change.
+    billingManager.release()
   }
 
   override fun onWindowFocusChanged(hasFocus: Boolean) {
