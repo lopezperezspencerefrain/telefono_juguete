@@ -44,6 +44,7 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
@@ -52,10 +53,18 @@ class MainActivity : ComponentActivity() {
   private var pendingPermissionRequest: PermissionRequest? = null
   private var mInterstitialAd: InterstitialAd? = null
 
-  // ID de Bloque de Anuncio Intersticial de Video de Prueba Oficial de Google
-  private val testAdUnitId = "ca-app-pub-3940256099942544/1033173712"
+  private val testAdUnitId = "ca-app-pub-8887568673600103/5527936069"
 
   private var isAdLoading = false
+
+  // Real ad unit ID above, but this device list keeps THIS device receiving clearly-labeled
+  // test ads instead of live ones. After running on a physical device, check Logcat (tag "Ad")
+  // for a line like: Use RequestConfiguration.Builder().setTestDeviceIds(Arrays.asList("XXXXX"))
+  // and add that hashed ID below. Never tap real ads on your own device — it risks an AdMob ban.
+  private val testDeviceIds = listOf(
+    AdRequest.DEVICE_ID_EMULATOR
+    // "PASTE_YOUR_DEVICE_HASHED_ID_HERE",
+  )
 
   private fun loadGoogleAd() {
     if (mInterstitialAd != null || isAdLoading) return
@@ -188,6 +197,9 @@ class MainActivity : ComponentActivity() {
     WebView.setWebContentsDebuggingEnabled(true)
 
     // Initialize Google Mobile Ads SDK & Preload Ad
+    MobileAds.setRequestConfiguration(
+      RequestConfiguration.Builder().setTestDeviceIds(testDeviceIds).build()
+    )
     MobileAds.initialize(this) {}
     loadGoogleAd()
 
