@@ -145,6 +145,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   setupEventListeners();
+  initRemoveAdsPrice();
 });
 
 function enableKioskMode() {
@@ -433,7 +434,7 @@ function setupEventListeners() {
   // PREMIUM BUY
   const buyPremiumBtn = document.getElementById('buy-premium-btn');
   buyPremiumBtn.addEventListener('click', () => {
-    simulatePremiumPurchase();
+    requestRemoveAdsPurchase();
   });
 
   // EXIT APP BUTTON / VOLVER AL PANEL
@@ -850,10 +851,44 @@ function showPremiumCard() {
   document.getElementById('premium-card').classList.remove('hidden');
 }
 
-// PREMIUM PURCHASE SIMULATION
-function simulatePremiumPurchase() {
+// REMOVE ADS PURCHASE (Google Play Billing)
+function requestRemoveAdsPurchase() {
+  if (window.AndroidApp && typeof window.AndroidApp.purchaseRemoveAds === 'function') {
+    window.AndroidApp.purchaseRemoveAds();
+  } else {
+    alert('Las compras solo están disponibles en la aplicación instalada. 📱');
+  }
+}
+
+function initRemoveAdsPrice() {
+  if (window.AndroidApp && typeof window.AndroidApp.getRemoveAdsPrice === 'function') {
+    onRemoveAdsPriceLoaded(window.AndroidApp.getRemoveAdsPrice());
+  }
+}
+
+function onRemoveAdsPriceLoaded(priceText) {
+  document.querySelectorAll('.remove-ads-price').forEach((el) => {
+    el.textContent = priceText;
+  });
+}
+
+function onRemoveAdsPurchased() {
   isPremium = true;
   localStorage.setItem('is_premium', 'true');
   playCallConnectedSound();
   showScreen('premium-success-screen');
+}
+
+function onRemoveAdsEntitlementRestored() {
+  isPremium = true;
+  localStorage.setItem('is_premium', 'true');
+}
+
+function onRemoveAdsPurchasePending() {
+  alert('Tu pago se está procesando. Los anuncios se quitarán automáticamente cuando se confirme. ⏳');
+}
+
+function onRemoveAdsPurchaseFailed(reason) {
+  console.error('Remove ads purchase failed:', reason);
+  alert('No se pudo completar la compra. Intenta de nuevo. 😕');
 }
