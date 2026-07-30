@@ -1,4 +1,4 @@
-package com.example.telefonojuguete.billing
+package com.logransoftware.telefonojuguete.billing
 
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase

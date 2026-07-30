@@ -21,7 +21,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Google AdMob Application ID (Usando ID de prueba oficial de Google) -->
+        <!-- Google AdMob Application ID (real production ID) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-8887568673600103~6745383033"/>

@@ -1,4 +1,4 @@
-package com.example.telefonojuguete.billing
+package com.logransoftware.telefonojuguete.billing
 
 import android.app.Activity
 import android.content.Context

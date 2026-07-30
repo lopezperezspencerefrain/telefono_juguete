@@ -1,4 +1,4 @@
-package com.example.telefonojuguete.theme
+package com.logransoftware.telefonojuguete.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

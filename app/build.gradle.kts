@@ -5,12 +5,12 @@ plugins {
 }
 
 android {
-    namespace = "com.example.telefonojuguete"
+    namespace = "com.logransoftware.telefonojuguete"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.example.telefonojuguete"
+        applicationId = "com.logransoftware.telefonojuguete"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 2
         versionName = "1.1"
     }
