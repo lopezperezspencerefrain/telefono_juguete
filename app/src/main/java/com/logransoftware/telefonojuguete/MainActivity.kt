@@ -1,4 +1,4 @@
-package com.example.telefonojuguete
+package com.logransoftware.telefonojuguete
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -40,7 +40,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.webkit.WebViewAssetLoader
 import kotlinx.coroutines.delay
-import com.example.telefonojuguete.billing.BillingManager
+import com.logransoftware.telefonojuguete.billing.BillingManager
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
   private var pendingPermissionRequest: PermissionRequest? = null
   private var mInterstitialAd: InterstitialAd? = null
 
-  private val testAdUnitId = "ca-app-pub-8887568673600103/5527936069"
+  private val interstitialAdUnitId = "ca-app-pub-8887568673600103/5527936069"
 
   private var isAdLoading = false
 
@@ -119,7 +119,7 @@ class MainActivity : ComponentActivity() {
     if (mInterstitialAd != null || isAdLoading) return
     isAdLoading = true
     val adRequest = AdRequest.Builder().build()
-    InterstitialAd.load(this, testAdUnitId, adRequest, object : InterstitialAdLoadCallback() {
+    InterstitialAd.load(this, interstitialAdUnitId, adRequest, object : InterstitialAdLoadCallback() {
       override fun onAdFailedToLoad(adError: LoadAdError) {
         android.util.Log.e("AdMob", "Error al cargar anuncio de Google: ${adError.message} (Código ${adError.code})")
         mInterstitialAd = null

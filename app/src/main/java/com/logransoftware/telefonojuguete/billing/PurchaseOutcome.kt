@@ -1,4 +1,4 @@
-package com.example.telefonojuguete.billing
+package com.logransoftware.telefonojuguete.billing
 
 sealed class PurchaseOutcome {
   data object Granted : PurchaseOutcome()

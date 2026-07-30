@@ -4,7 +4,7 @@
 }
 
 # Keep MainActivity
--keep class com.example.telefonojuguete.MainActivity { *; }
+-keep class com.logransoftware.telefonojuguete.MainActivity { *; }
 
 # Keep Google Mobile Ads SDK classes
 -keep class com.google.android.gms.ads.** { *; }

@@ -1,4 +1,4 @@
-package com.example.telefonojuguete.theme
+package com.logransoftware.telefonojuguete.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
