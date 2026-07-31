@@ -57,6 +57,7 @@ class MainActivity : ComponentActivity() {
   private val interstitialAdUnitId = "ca-app-pub-8887568673600103/5527936069"
 
   private var isAdLoading = false
+  private var shouldCloseAppOnResume = false
 
   // Real ad unit ID above, but this device list keeps THIS device receiving clearly-labeled
   // test ads instead of live ones. After running on a physical device, check Logcat (tag "Ad")
@@ -137,6 +138,7 @@ class MainActivity : ComponentActivity() {
   @android.webkit.JavascriptInterface
   fun showGoogleVideoAd() {
     runOnUiThread {
+      shouldCloseAppOnResume = true
       if (mInterstitialAd != null) {
         displayAdNow()
       } else {
@@ -171,6 +173,7 @@ class MainActivity : ComponentActivity() {
   }
 
   private fun displayAdNow() {
+    shouldCloseAppOnResume = true
     mInterstitialAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
       override fun onAdDismissedFullScreenContent() {
         mInterstitialAd = null
@@ -236,7 +239,16 @@ class MainActivity : ComponentActivity() {
       } catch (e: Exception) {
         e.printStackTrace()
       }
-      finishAffinity()
+      try {
+        finishAndRemoveTask()
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
+      try {
+        finishAffinity()
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
     }
   }
 
@@ -457,6 +469,14 @@ class MainActivity : ComponentActivity() {
     // reference back to this Activity) must be unbound on every teardown, including the
     // recreation caused by a configuration change.
     billingManager.release()
+  }
+
+  override fun onResume() {
+    super.onResume()
+    hideSystemUI()
+    if (shouldCloseAppOnResume) {
+      closeApp()
+    }
   }
 
   override fun onWindowFocusChanged(hasFocus: Boolean) {
