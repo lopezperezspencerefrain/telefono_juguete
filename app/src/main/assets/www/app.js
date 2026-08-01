@@ -43,7 +43,7 @@ function initAudio() {
 }
 
 // Play a synthesized note
-function playTone(freq, type = 'sine', duration = 0.25, volume = 0.1) {
+function playTone(freq, type = 'sine', duration = 0.25, volume = 0.15) {
   try {
     initAudio();
     const osc = audioCtx.createOscillator();
@@ -64,6 +64,19 @@ function playTone(freq, type = 'sine', duration = 0.25, volume = 0.1) {
     osc.stop(audioCtx.currentTime + duration);
   } catch (e) {
     console.error("Audio error:", e);
+  }
+}
+
+// Trigger haptic vibration feedback for key presses
+function triggerHapticVibration(duration = 45) {
+  try {
+    if (window.AndroidApp && typeof window.AndroidApp.vibrate === 'function') {
+      window.AndroidApp.vibrate(duration);
+    } else if (navigator.vibrate) {
+      navigator.vibrate(duration);
+    }
+  } catch (e) {
+    console.log('Vibration error:', e);
   }
 }
 
@@ -107,7 +120,7 @@ function playSong() {
     setTimeout(() => {
       // Check if we are still in play screen to continue playing the song
       if (currentScreen === 'play-screen') {
-        playTone(item.note, 'triangle', item.dur / 1000, 0.06);
+        playTone(item.note, 'triangle', item.dur / 1000, 0.15);
         spawnEmojiParticle(window.innerWidth / 2, window.innerHeight / 2, '🎵');
       }
     }, accumulatedTime);
@@ -281,10 +294,11 @@ function setupEventListeners() {
   function handleKeyPress(val, clientX, clientY) {
     if (!val) return;
     initAudio();
+    triggerHapticVibration(45);
     
     // Play sound note
     if (keyNotes[val]) {
-      playTone(keyNotes[val], 'triangle', 0.25, 0.08);
+      playTone(keyNotes[val], 'triangle', 0.25, 0.15);
     }
     
     // Emojis reaction
@@ -302,7 +316,8 @@ function setupEventListeners() {
   // Clear button
   const clearBtn = document.getElementById('btn-clear');
   function triggerClear() {
-    playTone(180, 'sine', 0.15, 0.08);
+    triggerHapticVibration(45);
+    playTone(180, 'sine', 0.15, 0.15);
     if (enteredDigits.length > 0) {
       enteredDigits = enteredDigits.slice(0, -1);
       display.textContent = enteredDigits.length === 0 ? '¡Marca un número!' : enteredDigits;
@@ -323,8 +338,9 @@ function setupEventListeners() {
   // Call button
   const callBtn = document.getElementById('btn-call');
   function triggerCall() {
+    triggerHapticVibration(55);
     if (enteredDigits.length === 0) {
-      playTone(180, 'sine', 0.3, 0.08);
+      playTone(180, 'sine', 0.3, 0.4);
       display.textContent = '¡Escribe un número primero!';
       setTimeout(() => {
         if (enteredDigits.length === 0) display.textContent = '¡Marca un número!';
@@ -348,6 +364,7 @@ function setupEventListeners() {
   // Music button
   const musicBtn = document.getElementById('btn-music');
   function triggerMusic() {
+    triggerHapticVibration(45);
     playSong();
   }
 
@@ -371,6 +388,7 @@ function setupEventListeners() {
   // LLAMADA SIMULADA - HANG UP
   const hangupBtn = document.getElementById('hangup-btn');
   hangupBtn.addEventListener('click', () => {
+    triggerHapticVibration(60);
     endCall();
   });
 
