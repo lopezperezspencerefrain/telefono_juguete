@@ -2,6 +2,7 @@ package com.logransoftware.telefonojuguete
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -218,6 +219,29 @@ class MainActivity : ComponentActivity() {
     runOnUiThread {
       try {
         startLockTask()
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
+    }
+  }
+
+  @android.webkit.JavascriptInterface
+  fun vibrate(durationMs: Long) {
+    runOnUiThread {
+      try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+          val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager
+          vibratorManager?.defaultVibrator?.vibrate(android.os.VibrationEffect.createOneShot(durationMs, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+          @Suppress("DEPRECATION")
+          val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator?.vibrate(android.os.VibrationEffect.createOneShot(durationMs, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+          } else {
+            @Suppress("DEPRECATION")
+            vibrator?.vibrate(durationMs)
+          }
+        }
       } catch (e: Exception) {
         e.printStackTrace()
       }
