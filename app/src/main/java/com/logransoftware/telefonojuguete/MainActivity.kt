@@ -122,13 +122,17 @@ class MainActivity : ComponentActivity() {
     val adRequest = AdRequest.Builder().build()
     InterstitialAd.load(this, interstitialAdUnitId, adRequest, object : InterstitialAdLoadCallback() {
       override fun onAdFailedToLoad(adError: LoadAdError) {
-        android.util.Log.e("AdMob", "Error al cargar anuncio de Google: ${adError.message} (Código ${adError.code})")
+        android.util.Log.e("AdMob", "Error al cargar anuncio real de AdMob: ${adError.message} (Código ${adError.code})")
         mInterstitialAd = null
         isAdLoading = false
+        // Reintentar cargar anuncio real en segundo plano en 6 segundos
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+          loadGoogleAd()
+        }, 6000)
       }
 
       override fun onAdLoaded(interstitialAd: InterstitialAd) {
-        android.util.Log.d("AdMob", "Anuncio de Google cargado exitosamente.")
+        android.util.Log.d("AdMob", "Anuncio real de AdMob cargado exitosamente.")
         mInterstitialAd = interstitialAd
         isAdLoading = false
       }
@@ -159,7 +163,7 @@ class MainActivity : ComponentActivity() {
             if (mInterstitialAd != null) {
               try { progressDialog.dismiss() } catch (e: Exception) {}
               displayAdNow()
-            } else if (checkCount < 25) { // Esperar hasta 5 segundos
+            } else if (checkCount < 40) { // Esperar hasta 8 segundos por el anuncio real
               handler.postDelayed(this, 200)
             } else {
               try { progressDialog.dismiss() } catch (e: Exception) {}
